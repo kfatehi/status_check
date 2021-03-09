@@ -4,8 +4,6 @@ const fs = require('fs');
 
 const { port, updateFrequencyMs, scripts } = require('./config');
 
-let logger = fs.createWriteStream("mylog");
-
 const slowDown = require("express-slow-down");
 
 app.enable("trust proxy"); // only if you're behind a reverse proxy (Caddy, Heroku, Bluemix, AWS if you use an ELB, custom Nginx setup, etc)
@@ -33,13 +31,9 @@ app.get('/', (req, res) => {
     } else {
       html+="<p style=\"color:red\">"+script.failText+"</p>"
     }
+    html+="<small>Last Updated: "+script.time+"</small>"
   });
-
-  let timenow = new Date().toLocaleString();
-  res.send(html+"<hr><small>Last Updated: "+timenow+"</small> | <a href=\"status.json\">JSON</a>");
-  let logmsg = timenow+" "+ip+" GET / "+", replied: "+html+"\n";
-  process.stdout.write(logmsg);
-  logger.write(logmsg);
+  res.send(html+"<hr> <p><a href=\"status.json\">api</a> | <a href=\"https://github.com/kfatehi/status_check\">source code</a> <p>");
 });
 
 app.get('/status.json', (req, res) => {
@@ -49,6 +43,7 @@ app.get('/status.json', (req, res) => {
 function updateFields() {
   scripts.forEach(script=>{
     exec(script.cmd, (err, stdout, stderr)=>{
+      script.time = new Date().toLocaleString();
       script.code = 1;
       script.stderr = stderr;
       if (err) {
